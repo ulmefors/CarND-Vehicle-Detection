@@ -87,7 +87,7 @@ class FeatureExtractor:
 
             file_features.append(hog_features)
 
-            return np.concatenate(file_features)
+        return np.concatenate(file_features)
 
     def extract_features_from_image(self, image):
         feature_image = self.convert_color_space(image)
