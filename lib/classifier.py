@@ -11,8 +11,9 @@ class Classifier:
         # Use a linear SVC (support vector classifier)
         svc = LinearSVC()
         # Train the SVC
+        print('Started training')
         svc.fit(X_train, y_train)
-        print('Test Accuracy of SVC = ', svc.score(X_test, y_test))
+        print('Test Accuracy of SVC: {0:.2f}%'.format(svc.score(X_test, y_test) * 100))
         self.clf = svc
 
     def predict(self, features):

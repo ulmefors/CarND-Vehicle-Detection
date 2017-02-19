@@ -1,0 +1,1 @@
+for file in *.jpeg; do convert $file -resize 256 $file; done

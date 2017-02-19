@@ -1,3 +1,7 @@
+x_width = 1280
+y_height = 720
+
+
 def get_color_space():
     # 'RGB', 'HSV', 'LUV', 'HLS', 'YUV', 'YCrCb'
     return 'YUV'
@@ -20,14 +24,11 @@ def get_feature_config():
 
 def get_window_config():
 
-    x_width = 1280
-    y_height = 720
-
     window_config = {
         'x_start_stop': [0, x_width],
         'y_start_stop': [int(y_height/2), y_height],
         'xy_window': (128, 128),
-        'xy_overlap': (0.75, 0.75)
+        'xy_overlap': (5/8, 5/8)
     }
 
     return window_config

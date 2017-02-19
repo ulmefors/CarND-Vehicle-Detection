@@ -2,24 +2,22 @@ import numpy as np
 import matplotlib.image as mpimg
 import cv2
 from skimage.feature import hog
-import lib.config as config
-
-'''
-Get features from images. Code developed with inspiration from Udacity Self-Driving Car Nanodegree.
-'''
 
 
 class FeatureExtractor:
+    """
+    Extract features from images. Code developed with inspiration from Udacity Self-Driving Car Nanodegree.
 
-    def __init__(self):
-        self.feature_config = config.get_feature_config()
-        self.color_space = config.get_color_space()
+    """
+    def __init__(self, feature_config, color_space):
+        self.feature_config = feature_config
+        self.color_space = color_space
 
     SPATIAL_SIZE = (64, 64)
     HIST_BINS = 32
 
     def bin_spatial(self, image, size=SPATIAL_SIZE):
-        # Create feature vector
+        # Create feature vector using pixel values
         features = cv2.resize(image, size).ravel()
         return features
 
@@ -105,6 +103,7 @@ class FeatureExtractor:
             # Read RGB
             image = mpimg.imread(img_file)
 
+            # Convert color space from RGB to configuration color space (if required)
             feature_image = self.convert_color_space(image)
 
             file_features = self.__extract_features(feature_image, **self.feature_config)
@@ -114,6 +113,11 @@ class FeatureExtractor:
         return features
 
     def convert_color_space(self, image):
+        """ Converts color space in accordance with configuration
+
+        :param image: image in RGB color space
+        :return: image in configured color space
+        """
         # Load color space
         color_space = self.color_space
 
