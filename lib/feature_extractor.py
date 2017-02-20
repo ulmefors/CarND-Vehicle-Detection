@@ -103,6 +103,10 @@ class FeatureExtractor:
             # Read RGB
             image = mpimg.imread(img_file)
 
+            # Scale to make png and jpeg compatible
+            if img_file.endswith('png'):
+                image = (image * 255).astype(np.uint8)
+
             # Convert color space from RGB to configuration color space (if required)
             feature_image = self.convert_color_space(image)
 
