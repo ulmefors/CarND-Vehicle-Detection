@@ -82,7 +82,8 @@ class FeatureExtractor:
                 hog_features.append(self.get_hog_features(feature_image[:, :, channel], *args_list, **args_dict))
 
             # Unroll features if more than 1 dimension
-            if len(np.array(hog_features).shape) > 1:
+            # if len(np.array(hog_features).shape) > 1:
+            if np.ndim(hog_features) > 1:
                 hog_features = np.ravel(hog_features)
 
             file_features.append(hog_features)

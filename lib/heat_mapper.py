@@ -5,35 +5,39 @@ from scipy.ndimage.measurements import label
 class HeatMapper:
 
     def __init__(self, image_shape):
+        self.nb_frames = 6
         self.hot_windows = []
-        self.heat_map = np.zeros(image_shape)
-        self.threshold = 2
+        self.image_shape = image_shape
+        self.heatmap_stack = np.tile(np.zeros(image_shape), (self.nb_frames, 1, 1))
+        self.threshold = 8
 
     def add_hot_windows(self, windows):
 
-        heat_map = self.heat_map
+        heatmap = np.zeros(self.image_shape)
 
         for window in windows:
             x_min, x_max, y_min, y_max = window[0][0], window[1][0], window[0][1], window[1][1]
             # Add += 1 for all pixels inside each window
-            heat_map[y_min:y_max, x_min:x_max] += 1
+            heatmap[y_min:y_max, x_min:x_max] += 1
 
-        heat_map -= 1
-        heat_map = self.apply_threshold(heat_map, self.threshold)
+        self.heatmap_stack = np.insert(self.heatmap_stack, 0, heatmap, axis=0)
+        self.heatmap_stack = np.delete(self.heatmap_stack, -1, axis=0)
 
-        labels = label(heat_map)
+        heatmap = np.sum(self.heatmap_stack, axis=0)
+
+        heatmap = self.apply_threshold(heatmap, self.threshold)
+
+        labels = label(heatmap)
         bboxes = self.get_labeled_bboxes(labels)
-
-        self.heat_map = heat_map
 
         # Return updated heatmap
         return bboxes
 
-    def apply_threshold(self, heat_map, threshold):
+    def apply_threshold(self, heatmap, threshold):
         # Zero out pixels below the threshold
-        heat_map[heat_map <= threshold] = 0
+        heatmap[heatmap <= threshold] = 0
         # Return thresholded map
-        return heat_map
+        return heatmap
 
     def get_labeled_bboxes(self, labels):
         bboxes = []
