@@ -22,16 +22,34 @@ def get_feature_config():
     return feature_config
 
 
-def get_window_config():
+def get_window_configs():
 
-    window_config = {
-        'x_start_stop': [0, x_width],
-        'y_start_stop': [int(y_height/2), y_height],
+    overlap = 6/8
+
+    window_configs = []
+
+    window_configs.append({
+        'x_start_stop': [int(x_width * 2.5 / 8), int(x_width * 8 / 8)],
+        'y_start_stop': [int(y_height * 4.5 / 8), int(y_height * 6 / 8)],
+        'xy_window': (64, 64),
+        'xy_overlap': (overlap, overlap)
+    })
+
+    window_configs.append({
+        'x_start_stop': [int(x_width * 2 / 8), int(x_width * 8 / 8)],
+        'y_start_stop': [int(y_height * 4.5 / 8), int(y_height * 7 / 8)],
+        'xy_window': (96, 96),
+        'xy_overlap': (overlap, overlap)
+    })
+
+    window_configs.append({
+        'x_start_stop': [int(x_width * 2 / 8), int(x_width * 8 / 8)],
+        'y_start_stop': [int(y_height * 4.5 / 8), int(y_height * 8 / 8)],
         'xy_window': (128, 128),
-        'xy_overlap': (5/8, 5/8)
-    }
+        'xy_overlap': (overlap, overlap)
+    })
 
-    return window_config
+    return window_configs
 
 
 def main():
