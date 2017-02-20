@@ -3,21 +3,29 @@ from sklearn.svm import LinearSVC
 
 class Classifier:
 
-    # Classifier
-    def __init__(self):
-        self.clf = None
+    def __init__(self, clf=None):
+        self.clf = clf
 
     def train(self, X_train, X_test, y_train, y_test, type='SVC'):
         # Use a linear SVC (support vector classifier)
         svc = LinearSVC()
+
+        print('Start training')
         # Train the SVC
-        print('Started training')
         svc.fit(X_train, y_train)
-        print('Test Accuracy of SVC: {0:.2f}%'.format(svc.score(X_test, y_test) * 100))
         self.clf = svc
+
+        # Evaluate on test set
+        accuracy_test = svc.score(X_test, y_test)
+        print('Test accuracy of SVC: {0:.2f}%'.format(accuracy_test * 100))
+
+        return accuracy_test
 
     def predict(self, features):
         return self.clf.predict(features)
+
+    def get_classifier(self):
+        return self.clf
 
 
 def main():
