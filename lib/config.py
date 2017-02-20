@@ -4,17 +4,17 @@ y_height = 720
 
 def get_color_space():
     # 'RGB', 'HSV', 'LUV', 'HLS', 'YUV', 'YCrCb'
-    return 'YUV'
+    return 'HSV'
 
 
 def get_feature_config():
     feature_config = {
         'spatial_size': (64, 64),
         'hist_bins': 32,
-        'orient': 9,
+        'orient': 12,
         'pix_per_cell': 8,
         'cell_per_block': 2,
-        'hog_channel': 1,
+        'hog_channel': 'ALL',
         'spatial_feat': True,
         'hist_feat': True,
         'hog_feat': True
