@@ -23,9 +23,7 @@ def get_feature_config():
 
 
 def get_window_configs():
-
     overlap = 6/8
-
     window_configs = []
 
     window_configs.append({
@@ -34,22 +32,28 @@ def get_window_configs():
         'xy_window': (64, 64),
         'xy_overlap': (overlap, overlap)
     })
-
     window_configs.append({
         'x_start_stop': [int(x_width * 2 / 8), int(x_width * 8 / 8)],
         'y_start_stop': [int(y_height * 4.5 / 8), int(y_height * 7 / 8)],
         'xy_window': (96, 96),
         'xy_overlap': (overlap, overlap)
     })
-
     window_configs.append({
         'x_start_stop': [int(x_width * 2 / 8), int(x_width * 8 / 8)],
         'y_start_stop': [int(y_height * 4.5 / 8), int(y_height * 8 / 8)],
         'xy_window': (128, 128),
         'xy_overlap': (overlap, overlap)
     })
-
     return window_configs
+
+
+def get_bbox_focus_config():
+    bbox_focus_config = {
+        'overlap': 7/8,
+        'dimensions': [64, 96, 128],
+        'offset_fraction': 2/8
+    }
+    return bbox_focus_config
 
 
 def main():

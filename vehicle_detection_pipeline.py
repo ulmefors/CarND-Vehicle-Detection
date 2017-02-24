@@ -3,7 +3,6 @@ import cv2
 import glob
 import matplotlib.image as mpimg
 import numpy as np
-import matplotlib.pyplot as plt
 import lib.data_reader as data_reader
 import lib.config as config
 from lib.window_slider import WindowSlider
@@ -22,7 +21,7 @@ class Pipeline:
         self.feature_extractor = FeatureExtractor(config.get_feature_config(), config.get_color_space())
         self.window_slider = WindowSlider()
         self.preprocessor = PreProcessor(scaler=scaler)
-        self.heat_mapper = HeatMapper((config.y_height, config.x_width))
+        self.heat_mapper = HeatMapper((config.y_height, config.x_width), nb_frames=8, threshold=1.3)
         self.bboxes = []
         self.save_data = False
         self.load_data = False
@@ -54,7 +53,7 @@ class Pipeline:
         hot_windows = []
 
         for window in windows:
-            x_min, x_max, y_min, y_max = window[0][0], window[1][0], window[0][1], window[1][1]
+            x_min, y_min, x_max, y_max = np.ravel(window)
 
             resized = cv2.resize(image[y_min:y_max, x_min:x_max], (64, 64))
 
@@ -89,14 +88,8 @@ def main():
     video = True
 
     # Specify inputs and outputs
-    video_file = 'project_video'
+    video_file = 'test_video'
     video_output_dir = 'bin/'
-
-    # Plot image with detected lanes
-    for image_file in glob.glob('test_images/test*.jpg'):
-        image = mpimg.imread(image_file)
-        result = pipeline.run_pipeline(image)
-        cv2.imwrite(image_file.replace('test_images', 'bin'), cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
 
     if video:
         # Create output folder if missing
@@ -108,6 +101,12 @@ def main():
         input_clip = VideoFileClip(video_file + '.mp4')
         output_clip = input_clip.fl_image(pipeline.run_pipeline)
         output_clip.write_videofile(output, audio=False)
+    else:
+        # Plot image with detected lanes
+        for image_file in glob.glob('test_images/test*.jpg'):
+            image = mpimg.imread(image_file)
+            result = pipeline.run_pipeline(image)
+            cv2.imwrite(image_file.replace('test_images', 'bin'), cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
 
 
 if __name__ == "__main__":

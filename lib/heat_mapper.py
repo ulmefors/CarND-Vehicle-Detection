@@ -4,43 +4,50 @@ from scipy.ndimage.measurements import label
 
 class HeatMapper:
 
-    def __init__(self, image_shape):
-        self.nb_frames = 6
+    default_filter_size = (48, 48)
+
+    def __init__(self, image_shape, nb_frames=1, threshold=0):
+        self.nb_frames = nb_frames
         self.hot_windows = []
         self.image_shape = image_shape
-        self.heatmap_stack = np.tile(np.zeros(image_shape), (self.nb_frames, 1, 1))
-        self.threshold = 8
+        self.heatmap_stack = None
+        self.threshold = threshold
 
     def add_hot_windows(self, windows):
 
+        # Initialize heatmap and increase heat value for all pixels inside each window
         heatmap = np.zeros(self.image_shape)
-
         for window in windows:
-            x_min, x_max, y_min, y_max = window[0][0], window[1][0], window[0][1], window[1][1]
-            # Add += 1 for all pixels inside each window
+            x_min, y_min, x_max, y_max = np.ravel(window)
             heatmap[y_min:y_max, x_min:x_max] += 1
 
-        self.heatmap_stack = np.insert(self.heatmap_stack, 0, heatmap, axis=0)
-        self.heatmap_stack = np.delete(self.heatmap_stack, -1, axis=0)
+        # Add heatmap to stack of heatmaps, one for each frame. Initialize stack if nonexistent.
+        try:
+            self.heatmap_stack = np.insert(self.heatmap_stack, 0, heatmap, axis=0)
+        except ValueError:
+            self.heatmap_stack = np.tile(heatmap, (1, 1, 1))
+        # Limit stack depth (i.e. frame history) by removing the last entry
+        if self.heatmap_stack.shape[0] > self.nb_frames:
+            self.heatmap_stack = np.delete(self.heatmap_stack, -1, axis=0)
 
-        heatmap = np.sum(self.heatmap_stack, axis=0)
-
-        heatmap = self.apply_threshold(heatmap, self.threshold)
-
-        labels = label(heatmap)
-        bboxes = self.get_labeled_bboxes(labels)
-
-        # Return updated heatmap
+        # Calculate mean value of heatmap history, apply threshold, and return identified bounding boxes
+        heatmap_mean = np.mean(self.heatmap_stack, axis=0)
+        heatmap_thresholded = self.apply_threshold(heatmap_mean, self.threshold)
+        bboxes = self.get_labeled_bboxes(heatmap_thresholded, filter_size=self.default_filter_size)
         return bboxes
 
-    def apply_threshold(self, heatmap, threshold):
+    @staticmethod
+    def apply_threshold(heatmap, threshold):
         # Zero out pixels below the threshold
         heatmap[heatmap <= threshold] = 0
         # Return thresholded map
         return heatmap
 
-    def get_labeled_bboxes(self, labels):
+    @staticmethod
+    def get_labeled_bboxes(heatmap, filter_size=(0, 0)):
         bboxes = []
+        labels = label(heatmap)
+
         # Iterate through all detected cars
         for car_number in range(1, labels[1] + 1):
             # Find pixels with each car_number label value
@@ -48,11 +55,13 @@ class HeatMapper:
             # Identify x and y values of those pixels
             nonzeroy = np.array(nonzero[0])
             nonzerox = np.array(nonzero[1])
-            # Define a bounding box based on min/max x and y
-            bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
+            # Define a bounding box based on min/max of x/y
+            x_min, y_min, x_max, y_max = np.min(nonzerox), np.min(nonzeroy), np.max(nonzerox), np.max(nonzeroy)
 
-            bboxes.append(bbox)
-
+            # Filter bounding boxes to accept only boxes with minimum size
+            if x_max - x_min > filter_size[0] and y_max - y_min > filter_size[1]:
+                bbox = ((x_min, y_min), (x_max, y_max))
+                bboxes.append(bbox)
         return bboxes
 
 
