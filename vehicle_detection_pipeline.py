@@ -23,6 +23,7 @@ class Pipeline:
         self.window_slider = WindowSlider()
         self.preprocessor = PreProcessor(scaler=scaler)
         self.heat_mapper = HeatMapper((config.y_height, config.x_width))
+        self.bboxes = []
         self.save_data = False
         self.load_data = False
 
@@ -48,7 +49,8 @@ class Pipeline:
 
     def run_pipeline(self, image):
 
-        windows = self.window_slider.slide_window(image)
+        windows = self.window_slider.slide_window(image, bounding_boxes=self.bboxes)
+
         hot_windows = []
 
         for window in windows:
@@ -65,9 +67,9 @@ class Pipeline:
             if self.classifier.predict(scaled_features):
                 hot_windows.append(window)
 
-        bboxes = self.heat_mapper.add_hot_windows(hot_windows)
+        self.bboxes = self.heat_mapper.add_hot_windows(hot_windows)
 
-        for bbox in bboxes:
+        for bbox in self.bboxes:
             cv2.rectangle(image, bbox[0], bbox[1], (0, 127, 255), 4)
 
         return image

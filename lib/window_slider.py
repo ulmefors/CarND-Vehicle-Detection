@@ -1,4 +1,5 @@
 import lib.config as cfg
+import numpy as np
 
 
 class WindowSlider:
@@ -6,23 +7,35 @@ class WindowSlider:
     def __init__(self):
         self.window_configs = cfg.get_window_configs()
 
-    def slide_window(self, img):
+    def slide_window(self, img, bounding_boxes=[]):
         window_list = []
         for config in self.window_configs:
             windows = self.__slide_window(img, **config)
             window_list.extend(windows)
+
+        # Perform concentrated search with extra windows around specified bounding boxes e.g. from previous frame
+        for bbox in bounding_boxes:
+            xmin, ymin, xmax, ymax = np.ravel(bbox)
+            for dim in [64, 96, 128]:
+                offset = int(dim/2)
+                windows = self.__slide_window(img, xy_window=(dim, dim), xy_overlap=(7/8, 7/8),
+                                              x_start_stop=[xmin-offset, xmax+offset],
+                                              y_start_stop=[ymin-offset, ymax+offset])
+                window_list.extend(windows)
+
         return window_list
 
     def __slide_window(self, img, x_start_stop=[None, None], y_start_stop=[None, None],
                         xy_window=(64, 64), xy_overlap=(0.5, 0.5)):
 
-        if x_start_stop[0] is None:
+        # Set x/y start/stop to edge if None, or outside image edge
+        if x_start_stop[0] is None or x_start_stop[0] < 0:
             x_start_stop[0] = 0
-        if x_start_stop[1] is None:
+        if x_start_stop[1] is None or x_start_stop[1] > img.shape[1]:
             x_start_stop[1] = img.shape[1]
-        if y_start_stop[0] is None:
+        if y_start_stop[0] is None or y_start_stop[0] < 0:
             y_start_stop[0] = 0
-        if y_start_stop[1] is None:
+        if y_start_stop[1] is None or y_start_stop[1] > img.shape[0]:
             y_start_stop[1] = img.shape[0]
 
         window_list = []
