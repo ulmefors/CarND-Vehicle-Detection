@@ -90,28 +90,20 @@ class FeatureExtractor:
         return np.concatenate(file_features)
 
     def extract_features_from_image(self, image):
+        # Convert color space from RGB to configuration color space (if required)
         feature_image = self.convert_color_space(image)
         features = self.__extract_features(feature_image, **self.feature_config)
         return features
 
     def extract_features_from_files(self, image_files):
-
         features = []
-
         for img_file in image_files:
-
-            # Read RGB
+            # Read RGB version from disk
             image = mpimg.imread(img_file)
-
-            # Scale to make png and jpeg compatible
+            # Scale values to make png and jpeg compatible
             if img_file.endswith('png'):
                 image = (image * 255).astype(np.uint8)
-
-            # Convert color space from RGB to configuration color space (if required)
-            feature_image = self.convert_color_space(image)
-
-            file_features = self.__extract_features(feature_image, **self.feature_config)
-
+            file_features = self.extract_features_from_image(image)
             features.append(file_features)
 
         return features
@@ -147,5 +139,5 @@ def main():
     pass
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

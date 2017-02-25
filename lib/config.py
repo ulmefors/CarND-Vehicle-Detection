@@ -56,9 +56,16 @@ def get_detection_focus_config():
     return detection_focus_config
 
 
+def get_heatmap_config(video):
+    heatmap_config_video = {'nb_frames': 8, 'threshold': 1.3}
+    heatmap_config_image = {'nb_frames': 1, 'threshold': 0.0}
+    heatmap_config = heatmap_config_video if video else heatmap_config_image
+    return heatmap_config
+
+
 def main():
     pass
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

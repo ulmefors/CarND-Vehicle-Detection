@@ -34,9 +34,10 @@ class PreProcessor:
     def get_scaler(self):
         return self.X_scaler
 
+
 def main():
     pass
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

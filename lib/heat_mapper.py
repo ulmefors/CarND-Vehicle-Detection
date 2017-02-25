@@ -6,7 +6,7 @@ class HeatMapper:
 
     default_filter_size = (48, 48)
 
-    def __init__(self, image_shape, nb_frames=1, threshold=0):
+    def __init__(self, image_shape, nb_frames, threshold):
         self.nb_frames = nb_frames
         self.hot_windows = []
         self.image_shape = image_shape
@@ -69,5 +69,5 @@ def main():
     pass
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

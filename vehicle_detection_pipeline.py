@@ -16,81 +16,72 @@ import pickle
 
 class Pipeline:
 
-    def __init__(self, clf=None, scaler=None):
+    model_file = './model.p'
+
+    def __init__(self, clf=None, scaler=None, video=False):
+        hm_cfg = config.get_heatmap_config(video)
+        self.heat_mapper = HeatMapper((config.y_height, config.x_width), hm_cfg['nb_frames'], hm_cfg['threshold'])
         self.classifier = Classifier(clf=clf)
         self.feature_extractor = FeatureExtractor(config.get_feature_config(), config.get_color_space())
         self.window_slider = WindowSlider()
         self.preprocessor = PreProcessor(scaler=scaler)
-        self.heat_mapper = HeatMapper((config.y_height, config.x_width), nb_frames=8, threshold=1.3)
         self.detection_boxes = []
-        self.save_data = False
-        self.load_data = False
 
     def load_features(self):
         car_files, non_car_files = data_reader.read_data(small_sample=False)
-
         print('Extract features from {0} cars and {1} non-cars'.format(len(car_files), len(non_car_files)))
         car_features = self.feature_extractor.extract_features_from_files(car_files)
         non_car_features = self.feature_extractor.extract_features_from_files(non_car_files)
-
         return car_features, non_car_features
 
     def train_classifier(self, car_features, non_car_features):
-
+        # Scale features. Split into train/test sets. Train Classifier. Save model (classifier + scaler) to disk.
         X_train, X_test, y_train, y_test = self.preprocessor.preprocess(car_features, non_car_features)
-
-        accuracy_test = self.classifier.train(X_train, X_test, y_train, y_test)
-
-        pickle.dump({'scaler': self.preprocessor.get_scaler()}, open("scaler.p", "wb"))
-        pickle.dump({'clf': self.classifier.get_classifier()}, open("clf.p", "wb"))
-
-        return accuracy_test
+        self.classifier.train(X_train, X_test, y_train, y_test)
+        pickle.dump({'scaler': self.preprocessor.get_scaler(), 'clf': self.classifier.get_classifier()},
+                    open(Pipeline.model_file, 'wb'))
 
     def run_pipeline(self, image):
-
+        # Choose windows where vehicles will be searched
         windows = self.window_slider.slide_window(image, detection_boxes=self.detection_boxes)
 
+        # Create detection boxes based on SVM predictions from content of each window
         hot_windows = []
-
         for window in windows:
             x_min, y_min, x_max, y_max = np.ravel(window)
-
             resized = cv2.resize(image[y_min:y_max, x_min:x_max], (64, 64))
-
-            # Get features
             features = self.feature_extractor.extract_features_from_image(resized)
-
-            # Scale
             scaled_features = self.preprocessor.scale_features(features)
-
             if self.classifier.predict(scaled_features):
                 hot_windows.append(window)
-
         self.detection_boxes = self.heat_mapper.add_hot_windows(hot_windows)
 
+        # Draw detection boxes around every car
         for box in self.detection_boxes:
             cv2.rectangle(image, box[0], box[1], (0, 127, 255), 4)
 
+        # Sign the art :)
         cv2.putText(image, 'Marcus Ulmefors, Udacity Self-Driving Car Nanodegree', (415, 710),
                     cv2.FONT_HERSHEY_DUPLEX, 0.5, (255,) * 3, 1, cv2.LINE_AA)
         return image
 
 
 def main():
-    if True:
-        clf = pickle.load(open("clf.p", "rb"))
-        scaler = pickle.load(open("scaler.p", "rb"))
-        pipeline = Pipeline(clf=clf['clf'], scaler=scaler['scaler'])
+    # Load model from disk or retrain classifier
+    load_classifier_and_scaler = True
+    # Run video or single image
+    video = False
+
+    if load_classifier_and_scaler:
+        model = pickle.load(open(Pipeline.model_file, 'rb'))
+        pipeline = Pipeline(clf=model['clf'], scaler=model['scaler'], video=video)
     else:
-        pipeline = Pipeline()
+        pipeline = Pipeline(video=video)
         car_features, non_car_features = pipeline.load_features()
         pipeline.train_classifier(car_features, non_car_features)
 
-    # Run video or single image
-    video = True
-
     # Specify inputs and outputs
-    video_file = 'test_video'
+    video_file = 'test_video.mp4'
     video_output_dir = 'bin/'
 
     if video:
@@ -99,17 +90,17 @@ def main():
             os.makedirs(video_output_dir)
 
         # Create video with lane zone overlay
-        output = video_output_dir + video_file + '.mp4'
-        input_clip = VideoFileClip(video_file + '.mp4')
+        output = video_output_dir + video_file
+        input_clip = VideoFileClip(video_file)
         output_clip = input_clip.fl_image(pipeline.run_pipeline)
         output_clip.write_videofile(output, audio=False)
     else:
         # Plot image with detected lanes
-        for image_file in glob.glob('test_images/test*.jpg'):
+        for image_file in glob.glob('test_images/test4.jpg'):
             image = mpimg.imread(image_file)
             result = pipeline.run_pipeline(image)
             cv2.imwrite(image_file.replace('test_images', 'bin'), cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
