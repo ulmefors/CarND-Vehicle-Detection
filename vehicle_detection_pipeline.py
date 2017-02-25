@@ -71,6 +71,8 @@ class Pipeline:
         for box in self.detection_boxes:
             cv2.rectangle(image, box[0], box[1], (0, 127, 255), 4)
 
+        cv2.putText(image, 'Marcus Ulmefors, Udacity Self-Driving Car Nanodegree', (415, 710),
+                    cv2.FONT_HERSHEY_DUPLEX, 0.5, (255,) * 3, 1, cv2.LINE_AA)
         return image
 
 
