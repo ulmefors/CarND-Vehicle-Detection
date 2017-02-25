@@ -73,6 +73,7 @@ def main():
     video = False
 
     if load_classifier_and_scaler:
+        print('Loading Classifier and Scaler from disk')
         model = pickle.load(open(Pipeline.model_file, 'rb'))
         pipeline = Pipeline(clf=model['clf'], scaler=model['scaler'], video=video)
     else:

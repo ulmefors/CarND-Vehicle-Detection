@@ -13,11 +13,10 @@ class HeatMapper:
         self.heatmap_stack = None
         self.threshold = threshold
 
-    def add_hot_windows(self, windows):
-
+    def add_hot_windows(self, hot_windows):
         # Initialize heatmap and increase heat value for all pixels inside each window
         heatmap = np.zeros(self.image_shape)
-        for window in windows:
+        for window in hot_windows:
             x_min, y_min, x_max, y_max = np.ravel(window)
             heatmap[y_min:y_max, x_min:x_max] += 1
 
