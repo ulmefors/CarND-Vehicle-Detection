@@ -13,7 +13,6 @@ class PreProcessor:
         return scaled_features
 
     def preprocess(self, car_features, non_car_features):
-        #print('Normalize and randomize data')
 
         # Create an array stack of feature vectors
         X = np.vstack((car_features, non_car_features)).astype(np.float64)

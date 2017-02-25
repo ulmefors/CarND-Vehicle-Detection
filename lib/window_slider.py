@@ -6,21 +6,21 @@ class WindowSlider:
 
     def __init__(self):
         self.window_configs = cfg.get_window_configs()
-        self.bbox_focus_config = cfg.get_bbox_focus_config()
+        self.detection_focus_config = cfg.get_detection_focus_config()
 
-    def slide_window(self, img, bounding_boxes=[]):
+    def slide_window(self, img, detection_boxes=[]):
         window_list = []
         for config in self.window_configs:
             windows = self.__slide_window(img, **config)
             window_list.extend(windows)
 
-        offset_fraction = self.bbox_focus_config['offset_fraction']
-        dimensions = self.bbox_focus_config['dimensions']
-        overlap = self.bbox_focus_config['overlap']
+        offset_fraction = self.detection_focus_config['offset_fraction']
+        dimensions = self.detection_focus_config['dimensions']
+        overlap = self.detection_focus_config['overlap']
 
         # Perform concentrated search with extra windows around specified bounding boxes e.g. from previous frame
-        for bbox in bounding_boxes:
-            xmin, ymin, xmax, ymax = np.ravel(bbox)
+        for box in detection_boxes:
+            xmin, ymin, xmax, ymax = np.ravel(box)
             dominant_dim = max(xmax-xmin, ymax-ymin)
             for dim in dimensions:
                 offset = int(dominant_dim*offset_fraction)

@@ -47,13 +47,13 @@ def get_window_configs():
     return window_configs
 
 
-def get_bbox_focus_config():
-    bbox_focus_config = {
+def get_detection_focus_config():
+    detection_focus_config = {
         'overlap': 7/8,
         'dimensions': [64, 96, 128],
         'offset_fraction': 2/8
     }
-    return bbox_focus_config
+    return detection_focus_config
 
 
 def main():

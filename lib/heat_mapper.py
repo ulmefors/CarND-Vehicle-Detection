@@ -33,8 +33,8 @@ class HeatMapper:
         # Calculate mean value of heatmap history, apply threshold, and return identified bounding boxes
         heatmap_mean = np.mean(self.heatmap_stack, axis=0)
         heatmap_thresholded = self.apply_threshold(heatmap_mean, self.threshold)
-        bboxes = self.get_labeled_bboxes(heatmap_thresholded, filter_size=self.default_filter_size)
-        return bboxes
+        detection_boxes = self.get_detection_boxes(heatmap_thresholded, filter_size=self.default_filter_size)
+        return detection_boxes
 
     @staticmethod
     def apply_threshold(heatmap, threshold):
@@ -44,8 +44,8 @@ class HeatMapper:
         return heatmap
 
     @staticmethod
-    def get_labeled_bboxes(heatmap, filter_size=(0, 0)):
-        bboxes = []
+    def get_detection_boxes(heatmap, filter_size=(0, 0)):
+        detection_boxes = []
         labels = label(heatmap)
 
         # Iterate through all detected cars
@@ -60,9 +60,9 @@ class HeatMapper:
 
             # Filter bounding boxes to accept only boxes with minimum size
             if x_max - x_min > filter_size[0] and y_max - y_min > filter_size[1]:
-                bbox = ((x_min, y_min), (x_max, y_max))
-                bboxes.append(bbox)
-        return bboxes
+                detection_box = ((x_min, y_min), (x_max, y_max))
+                detection_boxes.append(detection_box)
+        return detection_boxes
 
 
 def main():

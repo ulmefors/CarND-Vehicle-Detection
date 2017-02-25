@@ -22,7 +22,6 @@ class FeatureExtractor:
         return features
 
     # Define a function to compute color histogram features
-    # NEED TO CHANGE bins_range if reading .png files with mpimg!
     def color_hist(self, image, nbins=HIST_BINS, bins_range=(0, 256)):
         channel1_hist = np.histogram(image[:, :, 0], bins=nbins, range=bins_range)
         channel2_hist = np.histogram(image[:, :, 1], bins=nbins, range=bins_range)

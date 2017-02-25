@@ -8,15 +8,13 @@ class Classifier:
 
     def train(self, X_train, X_test, y_train, y_test, type='SVC'):
         # Use a linear SVC (support vector classifier)
-        svc = LinearSVC()
+        self.clf = LinearSVC()
 
         print('Start training')
-        # Train the SVC
-        svc.fit(X_train, y_train)
-        self.clf = svc
+        self.clf.fit(X_train, y_train)
 
         # Evaluate on test set
-        accuracy_test = svc.score(X_test, y_test)
+        accuracy_test = self.clf.score(X_test, y_test)
         print('Test accuracy of SVC: {0:.2f}%'.format(accuracy_test * 100))
 
         return accuracy_test

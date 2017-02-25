@@ -7,7 +7,7 @@ import lib.data_reader as data_reader
 import lib.config as config
 from lib.window_slider import WindowSlider
 from lib.feature_extractor import FeatureExtractor
-from lib.data_preprocessor import PreProcessor
+from lib.preprocessor import PreProcessor
 from lib.classifier import Classifier
 from lib.heat_mapper import HeatMapper
 from moviepy.editor import VideoFileClip
@@ -22,7 +22,7 @@ class Pipeline:
         self.window_slider = WindowSlider()
         self.preprocessor = PreProcessor(scaler=scaler)
         self.heat_mapper = HeatMapper((config.y_height, config.x_width), nb_frames=8, threshold=1.3)
-        self.bboxes = []
+        self.detection_boxes = []
         self.save_data = False
         self.load_data = False
 
@@ -48,7 +48,7 @@ class Pipeline:
 
     def run_pipeline(self, image):
 
-        windows = self.window_slider.slide_window(image, bounding_boxes=self.bboxes)
+        windows = self.window_slider.slide_window(image, detection_boxes=self.detection_boxes)
 
         hot_windows = []
 
@@ -66,10 +66,10 @@ class Pipeline:
             if self.classifier.predict(scaled_features):
                 hot_windows.append(window)
 
-        self.bboxes = self.heat_mapper.add_hot_windows(hot_windows)
+        self.detection_boxes = self.heat_mapper.add_hot_windows(hot_windows)
 
-        for bbox in self.bboxes:
-            cv2.rectangle(image, bbox[0], bbox[1], (0, 127, 255), 4)
+        for box in self.detection_boxes:
+            cv2.rectangle(image, box[0], box[1], (0, 127, 255), 4)
 
         return image
 
