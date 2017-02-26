@@ -16,15 +16,36 @@ Vehicles on video are detected and tracked using computer vision (OpenCV) and Ma
 [image10]: ./output_images/sliding_windows/hot-windows.jpg 'Hot windows'
 [image11]: ./output_images/sliding_windows/heatmap.jpg 'Heatmap'
 [image12]: ./output_images/sliding_windows/heatmap-thresholded-detection.jpg 'Heatmap Thresholded Detection'
-[image13]: ./output_images/
-[image14]: ./output_images/
-[image15]: ./output_images/
+[image13]: ./output_images/detection_focus/detection-focus-search.jpg
+[image14]: ./output_images/detection_focus/hot-windows-focus.jpg
+[image15]: ./output_images/detection_focus/hot-windows-standard.jpg
+[image16]: ./output_images/hog/301_hsv_2.jpeg
+[image17]: ./output_images/hog/301_hog_hsv_2.jpeg
+[image18]: ./output_images/hog/image0176_hsv_2.jpeg
+[image19]: ./output_images/hog/image0176_hog_hsv_2.jpeg
+[image22]: ./output_images/
 
 [video1]: ./output_videos/project_video.mp4 'Project video'
 
 Main script: `vehicle_detection_pipeline.py`
 
-Output video: `output_videos/project_video.mp4
+Output video: `output_videos/project_video.mp4` [Link](./output_videos/project_video.mp4)
+
+1. Describe pipeline
+1. Cover rubric points
+1. False positives
+1. Describe label-function combining blobs into vehicles + visualization
+3. Heatmap to Detection box
+4. HOG visualization
+------
+
+* Perform a Histogram of Oriented Gradients (HOG) feature extraction on a labeled training set of images and train a classifier Linear SVM classifier
+* Optionally, you can also apply a color transform and append binned color features, as well as histograms of color, to your HOG feature vector. 
+* Note: for those first two steps don't forget to normalize your features and randomize a selection for training and testing.
+* Implement a sliding-window technique and use your trained classifier to search for vehicles in images.
+* Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
+* Estimate a bounding box for vehicles detected.
+---
 
 ## Read data
 Labeled images in resolution 64 x 64 pixels with the classes `vehicle` and `non-vehicle` are loaded.  Examples for the both classes below.
@@ -37,16 +58,12 @@ Non-vehicle | Non-vehicle | Non-vehicle
 :---: | :---: | :---:
 ![alt_text][image4] | ![alt_text][image5] |![alt_text][image6]
 
-Some of the images labeled `non-vehicle` do in fact contain vehicles. In order to qualify as a `vehicle` image the entire vehicle must be visible within the bounds of the image and, in addition, make a close fit to the image borders.
+Some of the images labeled `non-vehicle` do in fact contain vehicles. In order to qualify as a `vehicle` image the entire vehicle must be visible within the bounds of the image and, in addition, make a close fit to the image borders. Alternatively, this could also be an example of data set errors.
 
 Download the labeled dataset for [vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/vehicles.zip) and [non-vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/non-vehicles.zip) respectively. The data is composed from a combination of the [GTI vehicle image database](http://www.gti.ssr.upm.es/data/Vehicle_database.html), the [KITTI vision benchmark suite](http://www.cvlibs.net/datasets/kitti/), and examples extracted from the project video itself.
 
 [file: `data_reader.py`](./lib/data_reader.py)
 ## Feature extraction
-
-### Color Histograms
-
-### Color space
 
 ### Histogram of Oriented Gradients (HOG)
 HOG features are extracted using `hog()` from `scikit-image`.
@@ -60,10 +77,15 @@ hog(image, orientations=9, pixels_per_cell=(8, 8), cells_per_block=(3, 3),
 
 A number of experiments were run to select HOG color space, image channels, and optimization parameters. The best performance in these benchmark tests was achieved using all three channels in the `HSV` color space in combination with the following parameters for feature extraction using `hog()`
 
-    orientations=12, pixels_per_cell=(8, 8),
-    cells_per_block=(2, 2), transform_sqrt=True
+    orientations=12, pixels_per_cell=(8, 8), cells_per_block=(2, 2)
 
 For the sake a brevity in this document, the full methodology can be found in [Appendix](./docs/APPENDIX.md).
+
+Examples of visualized HOG features for vehicle and non-vehicle classes are presented below. Only the HSV V-channel is used for visualization whereas all three HSV channels are included in the training and prediction.
+
+| HSV V-Channel | HSV V-CH HOG|  HSV V-Channel | HSV V-CH HOG |
+| :-----: | ----- | ----- | ----- |
+| ![alt_text][image16] | ![alt_text][image17] | ![alt_text][image18] | ![alt_text][image19] |
 
 ## Normalization and Classification
 
@@ -187,17 +209,13 @@ _Some discussion is given around how you improved the reliability of the classif
 ## Video implementation
 _The sliding-window search plus classifier has been used to search for and identify vehicles in the videos provided. Video output has been generated with detected vehicle positions drawn (bounding boxes, circles, cubes, etc.) on each frame of video._
 
-During processing of a video stream we have the advantage of being able to use previous frames in addition to the current frame. Frame-to-frame optimization is achieved by
-   
-   * Heatmap averaging
-   * Detection box window focus
+During processing of a video stream we have the advantage of being able to use previous frames in addition to the current frame. One important benefit of this opportunity is that false positives can be reduced since they are often classification errors and are unlikely to remain with high confidence in multiple sequential frames. Frame-to-frame optimization is achieved by _Heatmap averaging_ and _Detection box window focus_.
 
 ### Heatmap averaging
 Heatmap averaging is achieved by adding the current frame heatmap to a stack of previous heatmaps. The stack depth (and thus detection inertia/stability) is configurable by parameter `nb_frames`. A longer history reduces risk of losing track of a detected vehicle but also slows down initial detection. 
 
 ```python
 self.heatmap_stack = np.insert(self.heatmap_stack, 0, heatmap, axis=0)
-self.heatmap_stack = np.tile(heatmap, (1, 1, 1))
 if self.heatmap_stack.shape[0] > self.nb_frames:
     self.heatmap_stack = np.delete(self.heatmap_stack, -1, axis=0)
 heatmap_mean = np.mean(self.heatmap_stack, axis=0)
@@ -205,24 +223,30 @@ heatmap_mean = np.mean(self.heatmap_stack, axis=0)
 [file: `heat_mapper.py`](./lib/heat_mapper.py)
 
 ### Detection box window focus
+In order to avoid losing track of a detected vehicle we increase search intensity in the area around the detection box defined in the previous frame. The higher density of search windows close to the previous detection will increase the number of true positive vehicle predictions in the subsequent frame. The increased rate of correct vehicle detection can also allow for increase in heatmap thresholding, potentially reducing number of false positives.
 
-1. Focus around detection boxes
-2. Heatmap average
-3. Heatmap to Detection box
-4. HOG visualization
+In the left-most image (frame _f<sub>n</sub>_ ) we see the blue detection box from frame _f<sub>n-1</sub>_ and the resulting extended search windows marked in red. The center image shows the hot windows resulting from the extended focus search and the right-most image presents the hot windows from the standard search in frame _f<sub>n</sub>_ without knowledge from the previous frame.
 
-Extra focus
+| Extended search around detection box | Hot windows extended | Hot windows standard |
+|:---:|:---:|:---:|
+| ![alt_text][image13] | ![alt_text][image14] | ![alt_text][image15] |
+ 
+The difference in results comparing extended search (based on the detection from the previous frame) to standard search (from scratch) provides redundancy and stability to the detection algorithm.
+
 ```python
-for box in detection_boxes:
-    xmin, ymin, xmax, ymax = np.ravel(box)
-    dominant_dim = max(xmax-xmin, ymax-ymin)
-    for dim in dimensions:
-        offset = int(dominant_dim*offset_fraction)
-        focus_windows = self.__slide_window(img, xy_window=(dim, dim), xy_overlap=(overlap, overlap),
-                                      x_start_stop=[xmin-offset, xmax+offset],
-                                      y_start_stop=[ymin-offset, ymax+offset])
-        windows.extend(focus_windows)
+def slide_window(self, img, detection_boxes=[]):
+    for box in detection_boxes:
+        xmin, ymin, xmax, ymax = np.ravel(box)
+        dominant_dim = max(xmax-xmin, ymax-ymin)
+        for dim in dimensions:
+            offset = int(dominant_dim*offset_fraction)
+            focus_windows = self.__slide_window(img, xy_window=(dim, dim), xy_overlap=(overlap, overlap),
+                                          x_start_stop=[xmin-offset, xmax+offset],
+                                          y_start_stop=[ymin-offset, ymax+offset])
+            windows.extend(focus_windows)
 ```
+[file: `window_slider.py`](./lib/window_slider.py)
+
 
 ### Heat map
 _A method, such as requiring that a detection be found at or near the same position in several subsequent frames, (could be a heat map showing the location of repeat detections) is implemented as a means of rejecting false positives, and this demonstrably reduces the number of false positives. Same or similar method used to draw bounding boxes (or circles, cubes, etc.) around high-confidence detections where multiple overlapping detections occur._
@@ -231,7 +255,14 @@ _A method, such as requiring that a detection be found at or near the same posit
 ## Discussion
 _Discussion includes some consideration of problems/issues faced, what could be improved about their algorithm/pipeline, and what hypothetical cases would cause their pipeline to fail._
 
-The first problem to address is speed. The code runs on a single CPU-core and extracts all features for each sliding window indivually.
+The first problem to address is speed. The code runs on a single CPU-core and results are measured on a Macbook Pro 15" Mid 2015 in its basic configuration of i7 quad-core Haswell CPU [(full technical specs)](https://support.apple.com/kb/SP719). Features are extracted for each sliding window individually. For each window we have the following breakdown.
+ 
+|   | Spatial | Color histogram | HOG | Total |
+| :----- | :-----: | :-----: | :-----: | -----: |
+| Feature count  | 12288 | 96 | 7056 | 19440 |
+| Extraction time (ms) | 0.006 | 0.4 | 3 | 3.41 |
+
+In a basic frame we have 644 windows, resulting in total pipeline time 2.43 s, of which 2.23 s is feature extraction. Performing the feature extraction once per frame and sliding windows over the features would increase speed greatly. 
 
 It would be interesting to try using a CNN-classifier instead of a SVM to see if performance improves further, both accuracy and speed. 
 
