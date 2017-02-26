@@ -15,7 +15,7 @@ Vehicles on video are detected and tracked using computer vision (OpenCV) and Ma
 [image9]: ./output_images/sliding_windows/windows-64.jpg 'Windows 64px'
 [image10]: ./output_images/sliding_windows/hot-windows.jpg 'Hot windows'
 [image11]: ./output_images/sliding_windows/heatmap.jpg 'Heatmap'
-[image12]: ./output_images/sliding_windows/heatmap-overlay.jpg 'Heatmap overlay'
+[image12]: ./output_images/sliding_windows/heatmap-thresholded-detection.jpg 'Heatmap Thresholded Detection'
 [image13]: ./output_images/
 [image14]: ./output_images/
 [image15]: ./output_images/
@@ -95,8 +95,6 @@ def train(self, X_train, X_test, y_train, y_test):
 [file: `classifier.py`](./lib/classifier.py)
 
 ## Sliding windows
-_A sliding window approach has been implemented, where overlapping tiles in each test image are classified as vehicle or non-vehicle. Some justification has been given for the particular implementation chosen._
-
 In order to find vehicles, we scan each image (video frame) with vehicle-sized rectangular windows. The size and position of the window must be sufficiently similar to the vehicle in order to generate a match. Three sizes (128, 96, and 64 pixels) are used and snapshots are taken at regular intervals such that the windows overlap. Smaller windows scan near the center of the image (close to the horizon), and larger boxes near the base of the image (close to the det`ecting car). We take care to avoid sliding windows in areas where we do not expect to find vehicles in order to save computing resources and reduce number of false positives.
 
 | 128x128 | 96x96 | 64x64 | 
@@ -155,20 +153,63 @@ def apply_threshold(heatmap, threshold):
     heatmap[heatmap <= threshold] = 0
     return heatmap
 ``` 
-
 [file: `heat_mapper.py`](./lib/heat_mapper.py)
 
-| Hot windows | Heatmap | Heatmap overlay | 
+| Hot windows | Heatmap | Thresholded detection | 
 | :-----: | ----- | ----- |
 | ![alt_text][image10] | ![alt_text][image11] | ![alt_text][image12] |
 
 
+Pixels in the thresholded heatmap pertaining to vehicles are labelled and grouped into separate units using `label()`. For each of the areas the top-left pixel and the bottom-right pixel together define the detection box. An optional filter is added that can be used if false positives are more likely to produce thin detection boxes.
+
+```python
+from scipy.ndimage.measurements import label
+
+def get_detection_boxes(heatmap, filter_size=(0, 0)):
+    detection_boxes = []
+    labels = label(heatmap)
+
+    for car_number in range(1, labels[1] + 1):
+        nonzero = (labels[0] == car_number).nonzero()
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+        x_min, y_min, x_max, y_max = np.min(nonzerox), np.min(nonzeroy), np.max(nonzerox), np.max(nonzeroy)
+
+        if x_max - x_min > filter_size[0] and y_max - y_min > filter_size[1]:
+            detection_box = ((x_min, y_min), (x_max, y_max))
+            detection_boxes.append(detection_box)
+    return detection_boxes
+```
+[file: `heat_mapper.py`](./lib/heat_mapper.py)
+
 _Some discussion is given around how you improved the reliability of the classifier i.e., fewer false positives and more reliable car detections (this could be things like choice of feature vector, thresholding the decision function, hard negative mining etc.)_
 
-[file: `window_slider.py`](./lib/window_slider.py)
 ## Video implementation
 _The sliding-window search plus classifier has been used to search for and identify vehicles in the videos provided. Video output has been generated with detected vehicle positions drawn (bounding boxes, circles, cubes, etc.) on each frame of video._
 
+During processing of a video stream we have the advantage of being able to use previous frames in addition to the current frame. Frame-to-frame optimization is achieved by
+   
+   * Heatmap averaging
+   * Detection box window focus
+
+### Heatmap averaging
+Heatmap averaging is achieved by adding the current frame heatmap to a stack of previous heatmaps. The stack depth (and thus detection inertia/stability) is configurable by parameter `nb_frames`. A longer history reduces risk of losing track of a detected vehicle but also slows down initial detection. 
+
+```python
+self.heatmap_stack = np.insert(self.heatmap_stack, 0, heatmap, axis=0)
+self.heatmap_stack = np.tile(heatmap, (1, 1, 1))
+if self.heatmap_stack.shape[0] > self.nb_frames:
+    self.heatmap_stack = np.delete(self.heatmap_stack, -1, axis=0)
+heatmap_mean = np.mean(self.heatmap_stack, axis=0)
+```
+[file: `heat_mapper.py`](./lib/heat_mapper.py)
+
+### Detection box window focus
+
+1. Focus around detection boxes
+2. Heatmap average
+3. Heatmap to Detection box
+4. HOG visualization
 
 Extra focus
 ```python
