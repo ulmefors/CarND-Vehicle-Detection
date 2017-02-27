@@ -67,10 +67,10 @@ class Pipeline:
 
 
 def main():
-    # Load model from disk or retrain classifier
+    # Load model from disk instead of retraining classifier
     load_classifier_and_scaler = True
-    # Run video or single image
-    video = False
+    # Run video instead of single image
+    video = True
 
     if load_classifier_and_scaler:
         print('Loading Classifier and Scaler from disk')
@@ -82,7 +82,7 @@ def main():
         pipeline.train_classifier(car_features, non_car_features)
 
     # Specify inputs and outputs
-    video_file = 'test_video.mp4'
+    video_file = 'project_video.mp4'
     video_output_dir = 'bin/'
 
     if video:
@@ -90,14 +90,16 @@ def main():
         if not os.path.exists(video_output_dir):
             os.makedirs(video_output_dir)
 
-        # Create video with lane zone overlay
+        # Create video with detected vehicles
         output = video_output_dir + video_file
         input_clip = VideoFileClip(video_file)
         output_clip = input_clip.fl_image(pipeline.run_pipeline)
         output_clip.write_videofile(output, audio=False)
     else:
-        # Plot image with detected lanes
-        for image_file in glob.glob('test_images/test4.jpg'):
+        # Create image with detected vehicles
+        image_files = glob.glob('test_images/test*.jpg')
+        print('Detect vehicles in {0} image(s)'.format(len(image_files)))
+        for image_file in image_files:
             image = mpimg.imread(image_file)
             result = pipeline.run_pipeline(image)
             cv2.imwrite(image_file.replace('test_images', 'bin'), cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
