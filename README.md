@@ -30,6 +30,13 @@ Main script: `vehicle_detection_pipeline.py`
 
 Output video: `output_videos/project_video.mp4` [[Link]](./output_videos/project_video.mp4)
 
+## Requirements
+* opencv
+* moviepy
+* matplotlib
+* scikit-image
+* scikit-learn
+
 ## Pipeline
 Vehicle detection and tracking is achieved by completing the following stages.
 

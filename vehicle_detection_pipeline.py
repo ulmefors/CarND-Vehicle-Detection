@@ -1,3 +1,7 @@
+# Avoid bug: Python is not installed as a framework (OS X)
+import matplotlib
+matplotlib.use('TkAgg')
+
 import os
 import cv2
 import glob
@@ -5,14 +9,13 @@ import matplotlib.image as mpimg
 import numpy as np
 import lib.data_reader as data_reader
 import lib.config as config
+import pickle
+from moviepy.editor import VideoFileClip
 from lib.window_slider import WindowSlider
 from lib.feature_extractor import FeatureExtractor
 from lib.preprocessor import PreProcessor
 from lib.classifier import Classifier
 from lib.heat_mapper import HeatMapper
-from moviepy.editor import VideoFileClip
-import pickle
-
 
 class Pipeline:
 
